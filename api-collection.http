@@ -1,0 +1,234 @@
+### =============================================
+### Multi-tenant SaaS API - HTTP Collection
+### =============================================
+### Use with VS Code REST Client extension
+### or convert to curl/HTTPie as needed
+### =============================================
+
+@baseUrl = http://localhost:3000/api/v1
+@accessToken = YOUR_ACCESS_TOKEN_HERE
+@refreshToken = YOUR_REFRESH_TOKEN_HERE
+@tenantId = YOUR_TENANT_UUID_HERE
+
+### ===== AUTH =====
+
+### Register a new user (public - no tenant needed)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john@example.com",
+  "password": "StrongP@ss123"
+}
+
+###
+
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "StrongP@ss123"
+}
+
+###
+
+### Refresh access token
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+###
+
+### Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{accessToken}}
+
+###
+
+### ===== TENANTS (SUPER_ADMIN only) =====
+
+### Create a new tenant
+POST {{baseUrl}}/tenants
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Acme Corporation",
+  "subdomain": "acme",
+  "plan": "free"
+}
+
+###
+
+### List all tenants (paginated)
+GET {{baseUrl}}/tenants?page=1&limit=10
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Get tenant by ID
+GET {{baseUrl}}/tenants/{{tenantId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Update tenant
+PATCH {{baseUrl}}/tenants/{{tenantId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "plan": "pro",
+  "isActive": true
+}
+
+###
+
+### Delete tenant (also drops the schema)
+DELETE {{baseUrl}}/tenants/{{tenantId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### ===== USERS =====
+
+### Create user in a tenant
+POST {{baseUrl}}/users
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "email": "jane@acme.com",
+  "password": "SecureP@ss456",
+  "role": "ADMIN"
+}
+
+###
+
+### List users (filtered by tenant for non-SUPER_ADMIN)
+GET {{baseUrl}}/users?page=1&limit=10
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: {{tenantId}}
+
+###
+
+### Get user by ID
+GET {{baseUrl}}/users/USER_UUID_HERE
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: {{tenantId}}
+
+###
+
+### Update user
+PATCH {{baseUrl}}/users/USER_UUID_HERE
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "firstName": "Jane Updated",
+  "role": "MEMBER"
+}
+
+###
+
+### Delete user
+DELETE {{baseUrl}}/users/USER_UUID_HERE
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: {{tenantId}}
+
+###
+
+### ===== BILLING (Stripe) =====
+
+### Create Stripe customer for tenant
+POST {{baseUrl}}/billing/customers/{{tenantId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Create subscription (assign plan)
+POST {{baseUrl}}/billing/subscriptions/{{tenantId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "plan": "pro"
+}
+
+###
+
+### Cancel subscription
+POST {{baseUrl}}/billing/subscriptions/{{tenantId}}/cancel
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Get billing portal URL
+GET {{baseUrl}}/billing/portal/{{tenantId}}?returnUrl=http://localhost:3000
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Stripe webhook (call from Stripe CLI in test mode)
+### stripe trigger invoice.paid
+POST {{baseUrl}}/billing/webhook
+stripe-signature: whsec_test_signature
+Content-Type: application/json
+
+{}
+
+###
+
+### ===== PLANS =====
+
+### List available plans (public)
+GET {{baseUrl}}/plans?page=1&limit=10
+
+###
+
+### Get plan details (public)
+GET {{baseUrl}}/plans/PLAN_UUID_HERE
+
+###
+
+### Create a plan (SUPER_ADMIN only)
+POST {{baseUrl}}/plans
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Pro",
+  "price": 29.99,
+  "maxUsers": 50,
+  "features": ["unlimited_projects", "priority_support", "api_access"],
+  "stripePriceId": "price_pro_monthly_test"
+}
+
+###
+
+### Update a plan
+PATCH {{baseUrl}}/plans/PLAN_UUID_HERE
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "price": 39.99,
+  "maxUsers": 100
+}
+
+###
+
+### Delete a plan
+DELETE {{baseUrl}}/plans/PLAN_UUID_HERE
+Authorization: Bearer {{accessToken}}
